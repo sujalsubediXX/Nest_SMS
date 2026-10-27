@@ -3,6 +3,7 @@ import Wallet from "../models/wallet.model.js";
 import Message from "../models/message.model.js";
 import countPart from "../utils/sms.js";
 import getProvider from "../providers/index.js";
+import Provider from "../models/provider.model.js";
 
 function normalizeNumber(input) {
     let n = String(input).trim().replace(/[\s-]/g, "");
@@ -54,9 +55,32 @@ async function deliver(msg, providers) {
         });
     } finally {
         session.endSession();
+         
     }
+      await refundMessage(msg);
 }
+async function refundMessage(msg) {
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      // only the first caller flips pending -> failed
+      const updated = await Message.findOneAndUpdate(
+        { _id: msg._id, status: "pending" },
+        { status: "failed" },
+        { session }
+      );
+      if (!updated) return; // already handled, do NOT refund again
 
+      await Wallet.updateOne(
+        { userId: msg.userId },
+        { $inc: { credits: msg.cost } },
+        { session }
+      );
+    });
+  } finally {
+    session.endSession();
+  }
+}
 export async function sendSMS(req, res) {
     const userId = req.userId;
     const { to, message } = req.body;
@@ -213,47 +237,49 @@ export async function getLogs(req, res) {
 
 export async function getRoutesHealth(req, res) {
     const hour = 24;
-    const success_weight =0.8
-    const balance_weight =0.2
+    const success_weight = 0.8
+    const balance_weight = 0.2
     const low_balance_threshold = 100
 
     const since = new Date(Date.now() - hour * 60 * 60 * 1000);
 
     const stats = await Message.aggregate([
-        {$unwind: "$attempts"},
-        {$match:{createdAt: {$gte: since}}},
-        {$group: {
-            _id: "$attempts.route",
-            total: {$sum: 1},
-            success: {$sum: {$cond: ["$attempts.success", 1, 0]}},
-        }},
+        { $unwind: "$attempts" },
+        { $match: { createdAt: { $gte: since } } },
+        {
+            $group: {
+                _id: "$attempts.route",
+                total: { $sum: 1 },
+                success: { $sum: { $cond: ["$attempts.success", 1, 0] } },
+            }
+        },
     ])
 
- 
+
 
     const statsByRoute = Object.fromEntries(stats.map(s => [s._id, s]));
 
+    const providers = await Provider.find().sort({ priority: 1 });
+    const routes = providers.map((p) => {
+        const s = statsByRoute[p.name];
+        const total = s ? s.total : 0;
+        const success = s ? s.success : 0;
+        const successRate = total > 0 ? success / total : 1;
 
-   const providers = await Provider.find().sort({priority:1});
-   const routes = providers.map((p)=>{
-    const s = statsByRoute[p.name];
-    const total = s? s.total:0;
-    const success = s?s.success:0;
-    const successRate = total>0? success/total:1;
+        const balanceScore = Math.min(p.balance / low_balance_threshold, 1)
 
-    const balanceScore = Math.min(p.balance / low_balance_threshold ,1)
+        const health = p.balance <= 0 ? 0 : total == 0 ? 1 : success_weight * successRate + balance_weight * balanceScore
 
-    const health = p.balance<=0?0:total ==0 ? 1: success_weight*successRate + balance_weight*balanceScore
+        return {
+            route: p.name,
+            priority: p.priority,
+            balance: p.balance,
+            attemptsLast24h: total,
+            successRate: total === 0 ? null : Math.round(successRate * 100),
+            health: Math.round(health * 100),
 
-    return {
-      route: p.name,
-      priority: p.priority,
-      balance: p.balance,
-      attemptsLast24h: total,
-      successRate: total===0 ? null : Math.round(successRate * 100),
-      health: Math.round(health * 100),
-      
-    };
-   })
+        };
+    });
 
+    res.json({ routes });
 }

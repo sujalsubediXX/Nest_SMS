@@ -13,6 +13,13 @@ app.use(cors());
 app.use("/", router);
 app.use("/", smsRouter);
 
+app.use((error, req, res, next) => {
+  if (error.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "Request body must contain valid JSON" });
+  }
+  next(error);
+});
+
 
 const PORT = process.env.PORT || 3000;
 
