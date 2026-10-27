@@ -38,26 +38,8 @@ async function deliver(msg, providers) {
         }
     }
 
-    // every route failed: mark failed and refund (Part A.6)
-    const session = await mongoose.startSession();
-    try {
-        await session.withTransaction(async () => {
-            await Message.updateOne(
-                { _id: msg._id },
-                { status: "failed" },
-                { session },
-            );
-            await Wallet.updateOne(
-                { userId: msg.userId },
-                { $inc: { credits: msg.cost } },
-                { session },
-            );
-        });
-    } finally {
-        session.endSession();
-         
-    }
-      await refundMessage(msg);
+    // Only the pending -> failed transition is allowed to refund credits.
+    await refundMessage(msg);
 }
 async function refundMessage(msg) {
   const session = await mongoose.startSession();

@@ -11,22 +11,20 @@ class MockProvider {
     }
 
     async send(to, parts){
-        const provider = await Provider.findOne({name:this.name});
+        const provider = await Provider.findOne({ name: this.name });
+        if (!provider) throw new Error(`Provider ${this.name} not found`);
 
-        if(!provider){
-            throw new Error(`Provider ${this.name} not found`);
-        }
         const randomValue = Math.random();
-        console.log(randomValue)
-        if(randomValue < provider.failureRate){   //make failure
+        if (randomValue < provider.failureRate) {
             throw new Error(`Provider ${this.name} failed to send the message`);
         }
 
-        const res = await Provider.findOneAndUpdate(
-            {name:this.name},
-            {$inc:{balance:-parts}},
-            {returnDocument:'after'}
+        const chargedProvider = await Provider.findOneAndUpdate(
+            { name: this.name, balance: { $gte: parts } },
+            { $inc: { balance: -parts } },
+            { returnDocument: "after" },
         );
+        if (!chargedProvider) throw new Error(`Provider ${this.name} has insufficient balance`);
     }
 }
 
