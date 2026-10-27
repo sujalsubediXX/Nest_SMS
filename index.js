@@ -12,10 +12,7 @@ app.use(express.json());
 app.use(cors());
 app.use("/", router);
 app.use("/", smsRouter);
-app.get("/test", requireAuth, (req, res) => {
-  const id = req.userId;
-  res.json({ message: "Test route accessed successfully.", userId: id });
-});
+
 
 const PORT = process.env.PORT || 3000;
 
@@ -33,11 +30,9 @@ const Providers = async () => {
     console.error("Error seeding providers:", error);
   }
 };
-Providers()
-
-
 const startServer = async () => {
   await connectDB();
+  await Providers();
   app.listen(PORT, () => {
     console.log(`Server started at port ${PORT}`);
   });
