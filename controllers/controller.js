@@ -39,50 +39,18 @@ export const login = async (req, res) => {
   }
 };
 
-const validatePhoneNumber = (phoneNumber) => {
-  let number = phoneNumber.trim();
-
-  if (phoneNumber.startsWith("+977")) {
-    number = number.slice(4); // remove the +977
-  } else if (phoneNumber.startsWith("977") && phoneNumber.length === 13) {
-    number = number.slice(3); // remove the 977
-  }
-
-  if (!/^\d{10}$/.test(number)) {
-    return {
-      valid: false,
-      error: "Phone number must contain exactly 10 digits and must be number",
-    };
-  }
- if (!/^9[78]/.test(number)) {
-    return {
-      valid: false,
-      error: "Phone number must start with 97 or 98",
-    };
-  }
-
-   return {
-      valid: true,
-      number: number,
-    };
-};
-
 
 
 export const register = async (req, res) => {
   try {
-    const { name, email, phoneNumber, password } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!name || !email || !phoneNumber || !password) {
+    if (!name || !email  || !password) {
       return res.status(400).json({
-        error: "Name, email, phone number and password are required.",
+        error: "Name, email and password are required.",
       });
     }
 
-    const validatedPhoneNumber = validatePhoneNumber(phoneNumber);
-    if (!validatedPhoneNumber.valid) {
-      return res.status(400).json({ error: validatedPhoneNumber.error });
-    }
 
     if (password.length < 6) {
       return res
@@ -102,7 +70,6 @@ export const register = async (req, res) => {
             {
               name: name.trim(),
               email: email.trim().toLowerCase(),
-              phoneNumber: validatedPhoneNumber.number,
               password: hashedPassword,
             },
           ],

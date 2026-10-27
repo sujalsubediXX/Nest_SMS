@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import router from "./routes/routes.js";
-import connectDB from "./db.js";
+import connectDB from "./utils/db.js";
 import {requireAuth} from "./middleware/auth.js";
 dotenv.config();
 import Provider from "./models/provider.module.js";
@@ -32,6 +32,8 @@ const Providers = async () => {
   }
 };
 Providers()
+
+
 const startServer = async () => {
   await connectDB();
   app.listen(PORT, () => {
@@ -39,7 +41,4 @@ const startServer = async () => {
   });
 };
 
-startServer().catch((error) => {
-  console.error("Server startup failed:", error);
-  process.exit(1);
-});
+startServer()
