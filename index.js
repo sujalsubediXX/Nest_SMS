@@ -2,16 +2,18 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import router from "./routes/routes.js";
+import smsRouter from "./routes/smsroute.js";
 import connectDB from "./utils/db.js";
 import {requireAuth} from "./middleware/auth.js";
 dotenv.config();
-import Provider from "./models/provider.module.js";
+import Provider from "./models/provider.model.js";
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use("/", router);
+app.use("/", smsRouter);
 app.get("/test", requireAuth, (req, res) => {
-  const id = req._id; // Access the user ID from the request object
+  const id = req.userId;
   res.json({ message: "Test route accessed successfully.", userId: id });
 });
 

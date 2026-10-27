@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import User from "../models/user.module.js";
+import User from "../models/user.model.js";
 import mongoose from "mongoose";
-import Wallet from "../models/wallet.module.js";
+import Wallet from "../models/wallet.model.js";
 
 import bcrypt from "bcryptjs";
 import { requireAuth } from "../middleware/auth.js";

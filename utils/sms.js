@@ -1,9 +1,9 @@
-const GMS_Char =
+const GSM_CHARS =
   "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡" +
   "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
 const GSM_SET = new Set(GSM_CHARS);
 
-export function countPart(message){
+export default function countPart(message){
     const isGSM = [...message].every((c)=>GSM_SET.has(c));
     const length = message.length;
     const single = isGSM ? 160 : 70;

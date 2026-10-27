@@ -17,7 +17,7 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    part: {
+    parts: {
       type: Number,
       required: true,
     },
@@ -32,8 +32,7 @@ const messageSchema = new mongoose.Schema(
       index: true,
     },
     provider: {
-      type: Sting,
-      required: true,
+      type: String,
     },
      attempts: [
       {
@@ -45,5 +44,7 @@ const messageSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+messageSchema.index({ userId: 1, createdAt: -1 });
 
 export default mongoose.model("Message", messageSchema);

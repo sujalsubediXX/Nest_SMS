@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Wallet from "../models/wallet.model.js";
-import Message from "../models/message.module.js";
+import Message from "../models/message.model.js";
 import countPart from "../utils/sms.js";
 import getProvider from "../providers/index.js";
 
@@ -13,7 +13,7 @@ function normalizeNumber(input) {
   return /^9[78]\d{8}$/.test(n) ? n : null; // 10 digits, starts with 97 or 98
 }
 
-module.exports = { normalizeNumber };
+
 
 
 async function deliver(msg, providers) {
@@ -50,7 +50,7 @@ async function deliver(msg, providers) {
         { session },
       );
       await Wallet.updateOne(
-        { user: msg.user },
+        { userId: msg.userId },
         { $inc: { credits: msg.cost } },
         { session },
       );
@@ -60,8 +60,8 @@ async function deliver(msg, providers) {
   }
 }
 
-export default async function sendSMS(req, res) {
-  const userId = req._id; // Access the user ID from the request object
+export  async function sendSMS(req, res) {
+  const userId = req.userId;
   const { to, message } = req.body;
 
   if (!Array.isArray(to) || to.length == 0) {
@@ -99,7 +99,7 @@ export default async function sendSMS(req, res) {
       const wallet = await Wallet.findOneAndUpdate(
         { userId: userId, credits: { $gte: totalCost } },
         { $inc: { credits: -totalCost } },
-        { new: true, session },
+        { returnDocument: "after", session },
       );
       if (!wallet) {
         const err = new Error("Insufficient credits");
@@ -112,7 +112,7 @@ export default async function sendSMS(req, res) {
           userId,
           to: num,
           text: message,
-          part: totalParts,
+          parts: totalParts,
           cost: totalParts,
           status: "pending",
         })),
@@ -131,9 +131,7 @@ export default async function sendSMS(req, res) {
     session.endSession();
   }
 
-  const provider = getProvider();
-
-  const providers = await getProvidersInOrder();
+  const providers = await getProvider();
   for (const msg of messages) {
     await deliver(msg, providers);
   }
@@ -144,7 +142,7 @@ export default async function sendSMS(req, res) {
   });
   res.status(200).json({
     encoding,
-    partsPerMessage: parts,
+    partsPerMessage: totalParts,
     totalCost,
     results: final.map((m) => ({
       to: m.to,
@@ -152,4 +150,25 @@ export default async function sendSMS(req, res) {
       provider: m.provider,
     })),
   });
+}
+
+
+export  async function getLogs(req, res) {
+  const userId = req.userId;
+  const {status , date, number} = req.query;
+
+  const page = Math.max(parseInt(req.query.page ) || 1 ,1)
+  const limit = Math.min(Math.max(parseInt(re.query.limit) || 10, 1),100)
+
+  if(status && !["pending", "sent", "failed"].includes(status.toLowerCase())){
+    return res.status(400).json({error:"Invalid status filter"})
+  }
+  if(number ){
+    const normalized = normalizeNumber(number);
+    if(!normalized){
+      return res.status(400).json({error:"Invalid number filter"})
+    }
+  }
+
+  
 }

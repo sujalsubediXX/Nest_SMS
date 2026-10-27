@@ -14,18 +14,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true,
   },
-  phoneNumber:{
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    validate: {
-      validator: function (v) {
-        return /^9[78]\d{8}$/.test(v);
-      },
-      message: "Phone number must be a valid Nepal number",
-    },
-  },
+ 
   password: {
     type: String,
     required: true,

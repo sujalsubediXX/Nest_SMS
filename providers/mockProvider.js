@@ -1,4 +1,4 @@
-import Provider from '../models/provider.module.js';
+import Provider from '../models/provider.model.js';
 
 class MockProvider {
     constructor(name) {
@@ -7,24 +7,25 @@ class MockProvider {
 
     async getBalance() {
         const balance = await Provider.findOne({name: this.name}).select('balance');
-        return balance;
+        return balance?.balance ?? 0;
     }
 
-    async send(to, part){
+    async send(to, parts){
         const provider = await Provider.findOne({name:this.name});
 
         if(!provider){
             throw new Error(`Provider ${this.name} not found`);
         }
-
-        if(Math.random() < provider.failureRate){   //make failure
+        const randomValue = Math.random();
+        console.log(randomValue)
+        if(randomValue < provider.failureRate){   //make failure
             throw new Error(`Provider ${this.name} failed to send the message`);
         }
 
         const res = await Provider.findOneAndUpdate(
             {name:this.name},
-            {$inc:{balance:-part}},
-            {new:true}
+            {$inc:{balance:-parts}},
+            {returnDocument:'after'}
         );
     }
 }
