@@ -13,10 +13,10 @@ export async function sendSMS(req, res) {
     const { to, message } = req.body;
 
     if (!Array.isArray(to) || to.length == 0) {
-        return res.status(400).json({ error: "'to' must me non empty array" });
+        return res.status(400).json({ error: "'to' must be a non empty array" });
     }
 
-    if (!message || typeof message !== "string" || message.length == 0  || !message.trim()) {
+    if (!message || typeof message !== "string" || message.length == 0 || !message.trim()) {
         return res
             .status(400)
             .json({ error: "'message' must be a non-empty string" });
@@ -79,10 +79,29 @@ export async function sendSMS(req, res) {
         session.endSession();
     }
 
-    const providers = await getProvider();
-    for (const msg of messages) {
-        await deliver(msg, providers);
+
+
+    // 5. send each message with failover (outside the transaction)
+    let providers = [];
+    try {
+        providers = await getProvidersInOrder();
+    } catch (err) {
+        console.error("Could not load providers:", err);
     }
+
+    for (const msg of messages) {
+        try {
+            await deliver(msg, providers);
+        } catch (err) {
+            console.error("deliver crashed for", msg._id, err);
+            try {
+                await refundMessage(msg);   // safe: only refunds if still pending
+            } catch (refundErr) {
+                console.error("refund failed for", msg._id, refundErr);
+            }
+        }
+    }
+
 
     // 6. respond
     const final = await Message.find({
