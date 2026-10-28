@@ -123,5 +123,4 @@ Health is returned as a percentage from 0 to 100. A route with no attempts is re
 
 - Sending is synchronous; a queue such as BullMQ would be better for production.
 - Providers are simulated and do not deliver real SMS messages.
-- Provider balance debit and message status update are separate operations, so a process crash between those operations could require reconciliation.
-- There are no rate limits, delivery webhooks, or automated test suites yet.
+
