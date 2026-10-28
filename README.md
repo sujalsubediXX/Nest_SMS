@@ -63,11 +63,16 @@ The tests cover the SMS part counter, phone number normalisation, and provider f
 
 ## API
 
-All routes except `/register` and `/login` need this header:
+> **Note:** Only `POST /register` and `POST /login` are public. Every other route
+> (`/sms/send`, `/sms/logs`, `/routes/health`) needs a JWT token. Log in first, then send
+> it in the `Authorization` header on each request. Without a valid token, the API returns
+> `401 Unauthorized`.
 
 ```http
 Authorization: Bearer <token>
 ```
+
+In Postman, open the request's **Authorization** tab, choose **Bearer Token**, and paste the token from the login response.
 
 ### Register
 
@@ -269,5 +274,6 @@ tests/         unit tests
 ```
 
 ## What I would improve
-- Sending is synchronous; a queue such as BullMQ would be better for production.
-- Providers are simulated and do not deliver real SMS messages.
+
+- **Use a queue.** Sending is synchronous. A queue such as BullMQ would let the API respond .
+- **Use real providers.** The providers are simulated and do not deliver real SMS messages.
