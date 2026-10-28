@@ -25,14 +25,21 @@ const PORT = process.env.PORT || 3000;
 
 const Providers = async () => {
   try {
-    const existingProviders = await Provider.find();
-    if (existingProviders.length === 0) {
-      await Provider.insertMany([
-        { name: "ROUTE_A", priority: 1, balance: 1000, failureRate: 0.3 },
-        { name: "ROUTE_B", priority: 2, balance: 1000, failureRate: 0.1 },
-        { name: "ROUTE_C", priority: 3, balance: 1000, failureRate: 0.05 },
-      ]);
+    const defaults = [
+      { name: "ROUTE_A", priority: 1, balance: 1000, failureRate: 0.3 },
+      { name: "ROUTE_B", priority: 2, balance: 1000, failureRate: 0.1 },
+      { name: "ROUTE_C", priority: 3, balance: 1000, failureRate: 0.05 },
+    ];
+
+    for (const provider of defaults) {
+      await Provider.updateOne(
+        { name: provider.name },
+        { $setOnInsert: provider },
+        { upsert: true },
+      );
     }
+
+    console.log(`Providers available: ${await Provider.countDocuments()}`);
   } catch (error) {
     console.error("Error seeding providers:", error);
   }

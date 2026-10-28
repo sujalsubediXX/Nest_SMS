@@ -6,6 +6,7 @@ import getProvider from "../providers/index.js";
 import Provider from "../models/provider.model.js";
 import normalizeNumber from "../utils/normalizeNumber.js";
 import deliver from "../services/deliver.js";
+import refundMessage from "../services/refund.js";
 
 
 export async function sendSMS(req, res) {
@@ -84,7 +85,10 @@ export async function sendSMS(req, res) {
     // 5. send each message with failover (outside the transaction)
     let providers = [];
     try {
-        providers = await getProvidersInOrder();
+        providers = await getProvider();
+        if (providers.length === 0) {
+            throw new Error("No SMS providers are configured");
+        }
     } catch (err) {
         console.error("Could not load providers:", err);
     }
@@ -131,7 +135,7 @@ export async function getLogs(req, res) {
         if (!["pending", "sent", "failed"].includes(status.toLowerCase())) {
             return res.status(400).json({ error: "Invalid status filter" });
         }
-        filter.status = status;
+        filter.status = status.toLowerCase();
     }
     if (number) {
         const normalized = normalizeNumber(number);
