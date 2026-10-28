@@ -229,9 +229,45 @@ Health is shown as a percentage from 0 to 100.
 - **New users start with 100 credits** so the API can be tried straight away.
 - **A refund can only happen once.** The message must change from `pending` to `failed` in the same transaction as the refund, so it cannot be refunded twice.
 
-## Known limitations
+## Protecting credits
 
+- The wallet is charged with a single conditional update (`credits >= cost`), so two parallel requests cannot both spend the same credits.
+- The deduction and the creation of the pending messages happen in one transaction, so a crash cannot take credits without creating messages.
+- Provider balance is deducted with a conditional update too, so a provider balance cannot go below zero.
+- A refund and the status change to `failed` happen in one transaction.
+
+### Checking the main requirement
+
+Give a wallet exactly 10 credits, set every provider's `failureRate` to 0, and fire 20 parallel `POST /sms/send` requests (1 recipient, 1 part each). Exactly 10 return 200, 10 return 402, and the wallet ends at 0.
+
+A script is included:
+
+```powershell
+$env:TOKEN="your_jwt_here"; node parallelTest.js
+```
+
+To force a refund for a demo, set every provider's `failureRate` to 1, send a message, and check that it is `failed` and the credits are back in the wallet.
+
+## Rate limiting
+
+`POST /sms/send` allows 60 requests per minute per user. Extra requests get HTTP 429 with this body:
+
+```json
+{ "error": "Too many requests. Try again in a minute." }
+```
+
+## Project structure
+
+```text
+controllers/   request handlers (sms, routes health, auth)
+models/        Mongoose models (User, Wallet, Message, Provider)
+providers/     mock provider class and provider lookup
+services/      deliver (failover) and refund logic
+utils/         phone number normalisation and SMS part counting
+middleware/    auth and rate limiter
+tests/         unit tests
+```
+
+## What I would improve
 - Sending is synchronous; a queue such as BullMQ would be better for production.
 - Providers are simulated and do not deliver real SMS messages.
-- Provider balance debit and message status update are separate operations, so a process crash between those operations could require reconciliation.
-- There are no rate limits, delivery webhooks, or automated test suites yet.
