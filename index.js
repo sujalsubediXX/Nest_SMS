@@ -1,16 +1,16 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import router from "./routes/routes.js";
-import smsRouter from "./routes/smsroute.js";
+import userrouter from "./routes/user.route.js";
+import smsRouter from "./routes/sms.route.js";
 import connectDB from "./utils/db.js";
-import {requireAuth} from "./middleware/auth.js";
+import { requireAuth } from "./middleware/auth.js";
 dotenv.config();
 import Provider from "./models/provider.model.js";
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use("/", router);
+app.use("/", userrouter);
 app.use("/", smsRouter);
 
 app.use((error, req, res, next) => {

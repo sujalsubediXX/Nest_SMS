@@ -1,68 +1,13 @@
 import mongoose from "mongoose";
 import Wallet from "../models/wallet.model.js";
 import Message from "../models/message.model.js";
-import countPart from "../utils/sms.js";
+import countPart from "../utils/smsPart.js";
 import getProvider from "../providers/index.js";
 import Provider from "../models/provider.model.js";
+import normalizeNumber from "../utils/normalizeNumber.js";
 
-function normalizeNumber(input) {
-    let n = String(input).trim().replace(/[\s-]/g, "");
 
-    if (n.startsWith("+977")) n = n.slice(4);
-    else if (n.startsWith("977") && n.length === 13) n = n.slice(3);
 
-    return /^9[78]\d{8}$/.test(n) ? n : null; // 10 digits, starts with 97 or 98
-}
-
-async function deliver(msg, providers) {
-    for (const provider of providers) {
-        if ((await provider.getBalance()) < msg.parts) continue; // skip routes without balance
-
-        try {
-            await provider.send(msg.to, msg.parts);
-            await Message.updateOne(
-                { _id: msg._id },
-                {
-                    status: "sent",
-                    provider: provider.name,
-                    $push: { attempts: { route: provider.name, success: true } },
-                },
-            );
-            return; // done
-        } catch (err) {
-            await Message.updateOne(
-                { _id: msg._id },
-                { $push: { attempts: { route: provider.name, success: false } } },
-            );
-            // loop continues to the next provider
-        }
-    }
-
-    // Only the pending -> failed transition is allowed to refund credits.
-    await refundMessage(msg);
-}
-async function refundMessage(msg) {
-  const session = await mongoose.startSession();
-  try {
-    await session.withTransaction(async () => {
-      // only the first caller flips pending -> failed
-      const updated = await Message.findOneAndUpdate(
-        { _id: msg._id, status: "pending" },
-        { status: "failed" },
-        { session }
-      );
-      if (!updated) return; // already handled, do NOT refund again
-
-      await Wallet.updateOne(
-        { userId: msg.userId },
-        { $inc: { credits: msg.cost } },
-        { session }
-      );
-    });
-  } finally {
-    session.endSession();
-  }
-}
 export async function sendSMS(req, res) {
     const userId = req.userId;
     const { to, message } = req.body;

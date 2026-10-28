@@ -1,5 +1,5 @@
 import Router from "express";
-import { sendSMS, getLogs,getRoutesHealth } from "../controllers/smsController.js";
+import { sendSMS, getLogs, getRoutesHealth } from "../controllers/sms.controller.js";
 import { requireAuth } from "../middleware/auth.js";
 import smsLimiter from "../middleware/rateLimiter.js";
 const router = Router();
