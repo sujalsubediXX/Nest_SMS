@@ -89,7 +89,16 @@ export const register = async (req, res) => {
   } catch (error) {
     console.error("Registration failed:", error);
     if (error?.code === 11000) {
-      return res.status(409).json({ error: "Email is already registered." });
+      const duplicateField = Object.keys(error.keyPattern ?? {})[0];
+
+      if (duplicateField === "email") {
+        return res.status(409).json({ error: "Email is already registered." });
+      }
+
+      console.error("Registration duplicate key:", error.keyValue);
+      return res.status(409).json({
+        error: "A registration record already exists.",
+      });
     }
     return res.status(500).json({ error: "Unable to register user." });
   }
