@@ -20,15 +20,23 @@ const createToken = (user) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (!email ) {
       return res
         .status(400)
-        .json({ error: "Email and password are required." });
+        .json({ error: "Email is required." });
+    }
+    if (!password) {
+      return res
+        .status(400)
+        .json({ error: "Password is required." });
     }
 
     const user = await User.findOne({ email: email.trim().toLowerCase() });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Invalid email or password." });
+    if (!user ) {
+      return res.status(401).json({ error: "Invalid email or User does not exist." });
+    }
+    if (!(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: "Incorrect password." });
     }
 
     const token = createToken(user);
