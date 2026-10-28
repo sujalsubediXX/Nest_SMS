@@ -5,7 +5,7 @@ import countPart from "../utils/smsPart.js";
 import getProvider from "../providers/index.js";
 import Provider from "../models/provider.model.js";
 import normalizeNumber from "../utils/normalizeNumber.js";
-
+import deliver from "../services/deliver.js";
 
 
 export async function sendSMS(req, res) {
