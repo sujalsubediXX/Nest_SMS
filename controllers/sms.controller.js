@@ -16,7 +16,7 @@ export async function sendSMS(req, res) {
         return res.status(400).json({ error: "'to' must me non empty array" });
     }
 
-    if (!message || typeof message !== "string" || message.length == 0) {
+    if (!message || typeof message !== "string" || message.length == 0  || !message.trim()) {
         return res
             .status(400)
             .json({ error: "'message' must be a non-empty string" });
