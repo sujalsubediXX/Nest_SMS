@@ -37,8 +37,8 @@ export async function sendSMS(req, res) {
         });
     }
 
-    const { totalParts, encoding } = countPart(message);
-    const totalCost = totalParts * numbers.length;
+    const { parts, encoding } = countPart(message);
+    const totalCost = parts * numbers.length;
 
     const session = await mongoose.startSession();
     let messages;
@@ -60,8 +60,8 @@ export async function sendSMS(req, res) {
                     userId,
                     to: num,
                     text: message,
-                    parts: totalParts,
-                    cost: totalParts,
+                    parts,
+                    cost: parts,
                     status: "pending",
                 })),
                 { session },
@@ -90,7 +90,7 @@ export async function sendSMS(req, res) {
     });
     res.status(200).json({
         encoding,
-        partsPerMessage: totalParts,
+        partsPerMessage: parts,
         totalCost,
         results: final.map((m) => ({
             to: m.to,
